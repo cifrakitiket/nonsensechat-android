@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Window theme used only before Compose draws (splash/window bg, no native action bar).
+         All real theming is done in Compose (ui/theme). -->
+    <style name="Theme.NonsenseChat" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/brand_bg</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+</resources>
