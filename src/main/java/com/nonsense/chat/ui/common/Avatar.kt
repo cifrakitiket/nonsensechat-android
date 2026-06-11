@@ -40,7 +40,10 @@ fun Avatar(
     modifier: Modifier = Modifier,
 ) {
     val shape = CircleShape
-    if (!url.isNullOrBlank()) {
+    // Only treat real http(s) URLs as images — some docs hold placeholder junk like "⏳ Загрузка…"
+    // in the avatar field, which must fall back to initials instead of a broken image.
+    val isRealUrl = url != null && (url.startsWith("http://") || url.startsWith("https://"))
+    if (isRealUrl) {
         AsyncImage(
             model = url,
             contentDescription = name,

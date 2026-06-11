@@ -26,7 +26,22 @@ class UserRepository @Inject constructor(
 ) {
     private fun decode(row: DocRow): User = decodeDoc<User>(row).copy(id = row.id)
 
-    suspend fun get(uid: String): User? = docs.byId(Tables.USERS, uid)?.let(::decode)
+    /** Fetch a user profile, retrying a few times so a single transient REST timeout doesn't
+     *  permanently leave a name/avatar blank. */
+    suspend fun get(uid: String): User? {
+        // DocRepository.byId already retries + soft-fails (never throws). Add one light outer retry
+        // for the transient case where it soft-failed to null, then give up gracefully.
+        repeat(2) { attempt ->
+            val result = runCatching { docs.byId(Tables.USERS, uid)?.let(::decode) }.getOrNull()
+            if (result != null) {
+                android.util.Log.i("NSDIAG", "user.get($uid) -> ${result.nick}")
+                return result
+            }
+            kotlinx.coroutines.delay(800L * (attempt + 1))
+        }
+        android.util.Log.i("NSDIAG", "user.get($uid) -> NULL (gave up)")
+        return null
+    }
 
     fun observe(uid: String): Flow<User?> = channelFlow {
         send(get(uid))

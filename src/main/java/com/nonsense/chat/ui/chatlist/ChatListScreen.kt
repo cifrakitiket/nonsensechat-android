@@ -36,6 +36,7 @@ import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -68,6 +69,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.nonsense.chat.data.ConnectionMonitor
 import com.nonsense.chat.model.Folder
 import com.nonsense.chat.ui.common.Avatar
 import com.nonsense.chat.ui.theme.OnlineGreen
@@ -86,6 +88,7 @@ fun ChatListScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val accepted by viewModel.acceptedChat.collectAsState()
+    val connection by viewModel.connection.collectAsState()
     var searching by remember { mutableStateOf(false) }
     var queryText by remember { mutableStateOf("") }
     var menuOpen by remember { mutableStateOf(false) }
@@ -110,10 +113,9 @@ fun ChatListScreen(
                             onValueChange = { queryText = it; viewModel.setQuery(it) },
                         )
                     } else {
-                        Text(
-                            if (state.showArchived) "Архив" else "Сообщения",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
+                        ConnectionTitle(
+                            base = if (state.showArchived) "Архив" else "Сообщения",
+                            connection = connection,
                         )
                     }
                 },
@@ -217,6 +219,26 @@ fun ChatListScreen(
 
 /** Telegram-style borderless rounded search field that lives in the top bar. */
 @OptIn(ExperimentalMaterial3Api::class)
+/** Telegram-style top-bar title: shows a spinner + "Соединение…/Обновление…" while REST is
+ *  retrying on this flaky network, and the normal title once connected. */
+@Composable
+private fun ConnectionTitle(base: String, connection: ConnectionMonitor.State) {
+    if (connection == ConnectionMonitor.State.CONNECTED) {
+        Text(base, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+    } else {
+        val label = if (connection == ConnectionMonitor.State.CONNECTING) "Соединение…" else "Обновление…"
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(16.dp),
+                strokeWidth = 2.dp,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            Spacer(Modifier.width(10.dp))
+            Text(label, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
 @Composable
 private fun SearchPill(value: String, onValueChange: (String) -> Unit) {
     Surface(

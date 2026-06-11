@@ -33,7 +33,20 @@ class ChatRepository @Inject constructor(
     /** Live list of all chats the user is a member of, newest activity first. */
     fun observeMyChats(uid: String): Flow<List<Chat>> = channelFlow {
         val byId = LinkedHashMap<String, Chat>()
-        docs.whereContains(Tables.CHATS, "members", listOf(uid)).forEach { byId[it.id] = decode(it) }
+        // Initial load: on this flaky network the REST call can time out. Retry a few times instead
+        // of throwing (which would crash the collecting ViewModel); emit whatever we have meanwhile.
+        var loaded = false
+        var attempt = 0
+        while (!loaded && attempt < 6) {
+            runCatching {
+                docs.whereContains(Tables.CHATS, "members", listOf(uid)).forEach { byId[it.id] = decode(it) }
+            }.onSuccess { loaded = true }
+                .onFailure { android.util.Log.e("NSDIAG", "observeMyChats load attempt=$attempt failed: ${it.message}") }
+            if (!loaded) {
+                attempt++
+                kotlinx.coroutines.delay(800L * attempt)
+            }
+        }
         send(sorted(byId.values))
 
         realtime.changes(Tables.CHATS).collect { change ->

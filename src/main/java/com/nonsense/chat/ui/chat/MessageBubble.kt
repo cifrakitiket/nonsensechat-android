@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -17,8 +18,10 @@ import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
+import androidx.compose.material.icons.filled.BrokenImage
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.DoneAll
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -37,11 +40,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import coil.compose.AsyncImagePainter
+import coil.compose.SubcomposeAsyncImage
+import coil.compose.SubcomposeAsyncImageContent
 import com.nonsense.chat.model.MsgType
 import com.nonsense.chat.ui.common.Avatar
 import com.nonsense.chat.ui.common.formatTime
@@ -147,27 +154,35 @@ fun MessageBubble(
                         }
                     }
 
-                    if (msg.deleted) {
-                        Text("Message deleted", color = textColor.copy(alpha = 0.7f), fontStyle = FontStyle.Italic)
-                    } else {
-                        BubbleContent(ui, textColor, onImageClick, onOpenUrl, onVote)
-                    }
+                    // Telegram puts the time on the SAME line as short text instead of a separate
+                    // row below it — otherwise a one-word message ("тест") renders as a needlessly
+                    // tall bubble (text line + empty space + time line). For short single-line text
+                    // we keep text + time inline; everything else keeps the time on its own row.
+                    val shortInline = !msg.deleted &&
+                        msg.type == MsgType.TEXT &&
+                        msg.text.isNotBlank() &&
+                        !msg.text.contains('\n') &&
+                        msg.text.length <= 24 &&
+                        previewUrl(msg.text) == null
 
-                    Row(
-                        Modifier.fillMaxWidth().padding(top = 2.dp),
-                        horizontalArrangement = Arrangement.End,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(formatTime(msg.at_), style = MaterialTheme.typography.labelSmall,
-                            color = textColor.copy(alpha = 0.6f))
-                        if (mine) {
-                            Box(Modifier.width(4.dp))
-                            Icon(
-                                if (readByOther) Icons.Default.DoneAll else Icons.Default.Done,
-                                contentDescription = null,
-                                tint = textColor.copy(alpha = 0.8f),
-                                modifier = Modifier.size(14.dp),
-                            )
+                    if (shortInline) {
+                        Row(verticalAlignment = Alignment.Bottom) {
+                            RichMessageText(msg.text, textColor, onImageClick, onOpenUrl)
+                            Box(Modifier.width(8.dp))
+                            TimeMeta(msg.at_, mine, readByOther, textColor)
+                        }
+                    } else {
+                        if (msg.deleted) {
+                            Text("Message deleted", color = textColor.copy(alpha = 0.7f), fontStyle = FontStyle.Italic)
+                        } else {
+                            BubbleContent(ui, textColor, onImageClick, onOpenUrl, onVote)
+                        }
+                        Row(
+                            Modifier.fillMaxWidth().padding(top = 2.dp),
+                            horizontalArrangement = Arrangement.End,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            TimeMeta(msg.at_, mine, readByOther, textColor)
                         }
                     }
                 }
@@ -204,6 +219,51 @@ fun MessageBubble(
 }
 
 @Composable
+private fun TimeMeta(at: kotlinx.datetime.Instant?, mine: Boolean, readByOther: Boolean, textColor: Color) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(formatTime(at), style = MaterialTheme.typography.labelSmall,
+            color = textColor.copy(alpha = 0.6f))
+        if (mine) {
+            Box(Modifier.width(4.dp))
+            Icon(
+                if (readByOther) Icons.Default.DoneAll else Icons.Default.Done,
+                contentDescription = null,
+                tint = textColor.copy(alpha = 0.8f),
+                modifier = Modifier.size(14.dp),
+            )
+        }
+    }
+}
+
+/** Bounded placeholder for a photo that is loading or failed to load. Without this an
+ *  unloaded photo gives the bubble no intrinsic size and it balloons into a big empty box. */
+@Composable
+private fun PhotoStatusBox(textColor: Color, loading: Boolean) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(140.dp)
+            .background(textColor.copy(alpha = 0.08f)),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (loading) {
+            CircularProgressIndicator(
+                color = textColor.copy(alpha = 0.6f),
+                strokeWidth = 2.dp,
+                modifier = Modifier.size(28.dp),
+            )
+        } else {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(Icons.Default.BrokenImage, contentDescription = null,
+                    tint = textColor.copy(alpha = 0.6f), modifier = Modifier.size(28.dp))
+                Text("Фото не загрузилось", style = MaterialTheme.typography.labelSmall,
+                    color = textColor.copy(alpha = 0.6f), modifier = Modifier.padding(top = 4.dp))
+            }
+        }
+    }
+}
+
+@Composable
 private fun BubbleContent(
     ui: MessageUi,
     textColor: Color,
@@ -216,17 +276,30 @@ private fun BubbleContent(
         MsgType.PHOTO -> {
             var revealed by remember { mutableStateOf(!msg.isSpoiler) }
             val url = msg.photoUrl
-            if (url != null) {
-                Box {
-                    AsyncImage(
+            if (!url.isNullOrBlank()) {
+                Box(
+                    modifier = Modifier
+                        .widthIn(max = 240.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .clickable { if (!revealed) revealed = true else onImageClick(url) },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    // SubcomposeAsyncImage gives explicit Loading/Error states so an unloaded or
+                    // failed photo shows a small bounded placeholder instead of a giant empty bubble.
+                    SubcomposeAsyncImage(
                         model = url,
                         contentDescription = msg.caption,
+                        contentScale = ContentScale.FillWidth,
                         modifier = Modifier
-                            .widthIn(max = 280.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .then(if (!revealed) Modifier.blur(24.dp) else Modifier)
-                            .clickable { if (!revealed) revealed = true else onImageClick(url) },
-                    )
+                            .fillMaxWidth()
+                            .then(if (!revealed) Modifier.blur(24.dp) else Modifier),
+                    ) {
+                        when (painter.state) {
+                            is AsyncImagePainter.State.Loading -> PhotoStatusBox(textColor, loading = true)
+                            is AsyncImagePainter.State.Error -> PhotoStatusBox(textColor, loading = false)
+                            else -> SubcomposeAsyncImageContent()
+                        }
+                    }
                     if (!revealed) {
                         Box(Modifier.align(Alignment.Center)) {
                             Text("👁 Spoiler", color = Color.White)

@@ -30,9 +30,11 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.retryWhen
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -82,6 +84,13 @@ class ChatViewModel @Inject constructor(
     val myUid: String get() = account.uid.orEmpty()
     private val myNick: String get() = account.me.value?.nick ?: "User"
 
+    // Action launches (sends, uploads, receipts) hit the network and would crash the app if a
+    // timeout propagated out of viewModelScope. Most writes soft-fail in DocRepository now, but
+    // storage.upload throws on its own — this handler keeps any stray failure from killing the app.
+    private val safe = kotlinx.coroutines.CoroutineExceptionHandler { _, e ->
+        android.util.Log.e("NSDIAG", "chat action failed (swallowed): ${e.message}")
+    }
+
     private val members = MutableStateFlow<Map<String, User>>(emptyMap())
     private val replyingTo = MutableStateFlow<Message?>(null)
     private val editing = MutableStateFlow<Message?>(null)
@@ -126,7 +135,15 @@ class ChatViewModel @Inject constructor(
             editing = edit,
             pinned = chat?.pinnedMsgs ?: emptyList(),
         )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ChatUiState())
+    }
+        // Never let a REST/realtime timeout on this flaky network crash the chat screen.
+        .retryWhen { e, attempt ->
+            android.util.Log.e("NSDIAG", "chat uiState failed (attempt=$attempt): ${e.message}")
+            delay((1_000L * (attempt + 1)).coerceAtMost(8_000L))
+            true
+        }
+        .catch { e -> android.util.Log.e("NSDIAG", "chat uiState gave up: ${e.message}"); emit(ChatUiState(loading = false)) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ChatUiState())
 
     private fun subtitleFor(chat: Chat?, peer: User?, memberMap: Map<String, User>): String {
         if (chat == null) return ""
@@ -193,14 +210,14 @@ class ChatViewModel @Inject constructor(
     }
 
     fun sendPhoto(bytes: ByteArray, fileName: String, caption: String?, spoiler: Boolean) {
-        viewModelScope.launch {
+        viewModelScope.launch(safe) {
             val up = storage.upload(bytes, fileName, compressIfImage = true)
             messages.sendPhoto(chatId, myUid, myNick, up.url, up.fileName, up.size, caption, spoiler)
         }
     }
 
     fun sendFile(bytes: ByteArray, fileName: String, contentType: String?) {
-        viewModelScope.launch {
+        viewModelScope.launch(safe) {
             val up = storage.upload(bytes, fileName, contentType, compressIfImage = false)
             messages.sendFile(chatId, myUid, myNick, up.url, up.fileName, up.size)
         }

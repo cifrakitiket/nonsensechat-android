@@ -63,7 +63,14 @@ class AccountManager @Inject constructor(
         val uid = auth.currentUid() ?: return
         sessionJobs?.cancel()
         sessionJobs = scope.launch {
-            launch { users.observe(uid).collect { _me.value = it } }
+            // Keep the profile stream alive across transient network failures (e.g. request
+            // timeouts) — retry quietly instead of letting the exception crash the app.
+            launch {
+                while (isActive) {
+                    runCatching { users.observe(uid).collect { _me.value = it } }
+                    delay(3_000)
+                }
+            }
             launch { heartbeatLoop(uid) }
             launch { runCatching { pushTokens.register(uid) } }
         }
