@@ -12,10 +12,12 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -72,9 +74,10 @@ fun EditProfileScreen(onBack: () -> Unit, viewModel: EditProfileViewModel = hilt
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Edit profile") },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
+                title = { Text("Редактировать профиль", fontWeight = androidx.compose.ui.text.font.FontWeight.Bold) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
+                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Назад") }
                 },
                 actions = {
                     IconButton(onClick = {
@@ -86,7 +89,7 @@ fun EditProfileScreen(onBack: () -> Unit, viewModel: EditProfileViewModel = hilt
                             ),
                             onBack,
                         )
-                    }) { Icon(Icons.Default.Check, "Save") }
+                    }) { Icon(Icons.Default.Check, "Сохранить", tint = MaterialTheme.colorScheme.primary) }
                 },
             )
         },
@@ -94,14 +97,14 @@ fun EditProfileScreen(onBack: () -> Unit, viewModel: EditProfileViewModel = hilt
         Column(
             Modifier.fillMaxSize().padding(padding).padding(16.dp).verticalScroll(rememberScrollState()),
         ) {
-            Field("Nickname", nick) { nick = it }
-            Field("Username (without @)", username) { username = it }
-            Field("Avatar URL", avatar) { avatar = it }
-            Field("Bio", bio) { bio = it }
-            Field("First name", fname) { fname = it }
-            Field("Last name", lname) { lname = it }
-            Field("Birthday (YYYY-MM-DD)", bday) { bday = it }
-            Field("Phone", phone) { phone = it }
+            Field("Никнейм", nick) { nick = it }
+            Field("Имя пользователя (без @)", username) { username = it }
+            Field("Ссылка на аватар", avatar) { avatar = it }
+            Field("О себе", bio) { bio = it }
+            Field("Имя", fname) { fname = it }
+            Field("Фамилия", lname) { lname = it }
+            Field("День рождения (ГГГГ-ММ-ДД)", bday) { bday = it }
+            Field("Телефон", phone) { phone = it }
         }
     }
 }

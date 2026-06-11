@@ -69,7 +69,7 @@ fun PollDialog(onDismiss: () -> Unit, onCreate: (poll: JsonElement, question: St
                     onCreate(poll, question.trim())
                     onDismiss()
                 },
-            ) { Text("Create") }
+            ) { Text("Создать") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )

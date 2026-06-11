@@ -45,6 +45,7 @@ import coil.compose.AsyncImage
 import com.nonsense.chat.model.MsgType
 import com.nonsense.chat.ui.common.Avatar
 import com.nonsense.chat.ui.common.formatTime
+import com.nonsense.chat.ui.theme.TgAccent3
 import com.nonsense.chat.ui.theme.TgOutGradBottom
 import com.nonsense.chat.ui.theme.TgOutGradTop
 
@@ -91,6 +92,7 @@ fun MessageBubble(
     val outBrush = Brush.linearGradient(listOf(TgOutGradTop, TgOutGradBottom))
     val inColor = MaterialTheme.colorScheme.surfaceVariant
     val textColor = if (mine) Color.White else MaterialTheme.colorScheme.onSurface
+    // Telegram bubble (web .msg): 18px radius with a small 4px "tail" corner on the anchored side.
     val bubbleShape = RoundedCornerShape(
         topStart = 18.dp, topEnd = 18.dp,
         bottomStart = if (mine) 18.dp else 4.dp, bottomEnd = if (mine) 4.dp else 18.dp,
@@ -122,8 +124,9 @@ fun MessageBubble(
             ) {
                 Column(Modifier.padding(horizontal = 11.dp, vertical = 7.dp)) {
                     if (!mine && isGroup && ui.showAuthor) {
+                        // Web .msg-author: single light-blue accent for all sender names.
                         Text(ui.authorName, style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                            color = TgAccent3, fontWeight = FontWeight.Bold)
                     }
                     msg.forwardFrom?.let {
                         Text("Forwarded from $it", style = MaterialTheme.typography.labelSmall,

@@ -21,6 +21,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -87,22 +88,23 @@ fun NewGroupScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("New group") },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
+                title = { Text("Новая группа", fontWeight = androidx.compose.ui.text.font.FontWeight.Bold) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
+                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Назад") }
                 },
             )
         },
         floatingActionButton = {
             if (name.isNotBlank()) {
-                FloatingActionButton(onClick = { viewModel.create(name) }) { Icon(Icons.Default.Check, "Create") }
+                FloatingActionButton(onClick = { viewModel.create(name) }, containerColor = MaterialTheme.colorScheme.primary, contentColor = androidx.compose.ui.graphics.Color.White) { Icon(Icons.Default.Check, "Создать") }
             }
         },
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
-            OutlinedTextField(name, { name = it }, label = { Text("Group name") },
+            OutlinedTextField(name, { name = it }, label = { Text("Название группы") },
                 singleLine = true, modifier = Modifier.fillMaxWidth().padding(12.dp))
-            OutlinedTextField(query, { query = it; viewModel.search(it) }, placeholder = { Text("Add members") },
+            OutlinedTextField(query, { query = it; viewModel.search(it) }, placeholder = { Text("Добавить участников") },
                 singleLine = true, modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp))
             LazyColumn(Modifier.fillMaxSize()) {
                 items(results, key = { it.id }) { user ->

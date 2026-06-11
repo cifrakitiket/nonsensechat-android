@@ -2,8 +2,10 @@ package com.nonsense.chat.ui.chatlist
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,9 +14,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -22,6 +26,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.VolumeOff
 import androidx.compose.material.icons.filled.Archive
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Edit
@@ -31,11 +36,9 @@ import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Badge
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -43,8 +46,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -61,12 +67,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.rememberScrollState
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.nonsense.chat.model.Folder
 import com.nonsense.chat.ui.common.Avatar
 import com.nonsense.chat.ui.theme.OnlineGreen
+import com.nonsense.chat.ui.theme.TgAccent3
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -92,48 +97,54 @@ fun ChatListScreen(
         accepted?.let { onOpenChat(it); viewModel.consumeAccepted() }
     }
 
+    fun closeSearch() { searching = false; queryText = ""; viewModel.setQuery("") }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
                 title = {
                     if (searching) {
-                        OutlinedTextField(
+                        SearchPill(
                             value = queryText,
                             onValueChange = { queryText = it; viewModel.setQuery(it) },
-                            placeholder = { Text("Поиск") },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
                         )
                     } else {
-                        Text(if (state.showArchived) "Архив" else "Сообщения", fontWeight = FontWeight.Bold)
+                        Text(
+                            if (state.showArchived) "Архив" else "Сообщения",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                        )
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = { menuOpen = true }) { Icon(Icons.Default.Menu, "Меню") }
-                    DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                        state.me?.let { me ->
+                    if (searching) {
+                        IconButton(onClick = { closeSearch() }) { Icon(Icons.Default.Close, "Закрыть поиск") }
+                    } else {
+                        IconButton(onClick = { menuOpen = true }) { Icon(Icons.Default.Menu, "Меню") }
+                        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                            state.me?.let { me ->
+                                DropdownMenuItem(
+                                    text = { Text(me.displayName) },
+                                    leadingIcon = { Avatar(me.displayName, me.avatar, size = 28.dp) },
+                                    onClick = { menuOpen = false; onOpenProfile(me.id) },
+                                )
+                            }
+                            DropdownMenuItem(text = { Text("Друзья") }, leadingIcon = { Icon(Icons.Default.PersonAdd, null) }, onClick = { menuOpen = false; onOpenFriends() })
+                            DropdownMenuItem(text = { Text("Папки") }, leadingIcon = { Icon(Icons.Default.Edit, null) }, onClick = { menuOpen = false; foldersDialog = true })
                             DropdownMenuItem(
-                                text = { Text(me.displayName) },
-                                leadingIcon = { Avatar(me.displayName, me.avatar, size = 28.dp) },
-                                onClick = { menuOpen = false; onOpenProfile(me.id) },
+                                text = { Text(if (state.showArchived) "Все чаты" else "Архив (${state.archivedCount})") },
+                                leadingIcon = { Icon(Icons.Default.Archive, null) },
+                                onClick = { menuOpen = false; viewModel.toggleArchivedView() },
                             )
+                            DropdownMenuItem(text = { Text("Настройки") }, onClick = { menuOpen = false; onOpenSettings() })
                         }
-                        DropdownMenuItem(text = { Text("Друзья") }, leadingIcon = { Icon(Icons.Default.PersonAdd, null) }, onClick = { menuOpen = false; onOpenFriends() })
-                        DropdownMenuItem(text = { Text("Папки") }, leadingIcon = { Icon(Icons.Default.Edit, null) }, onClick = { menuOpen = false; foldersDialog = true })
-                        DropdownMenuItem(
-                            text = { Text(if (state.showArchived) "Все чаты" else "Архив (${state.archivedCount})") },
-                            leadingIcon = { Icon(Icons.Default.Archive, null) },
-                            onClick = { menuOpen = false; viewModel.toggleArchivedView() },
-                        )
-                        DropdownMenuItem(text = { Text("Настройки") }, onClick = { menuOpen = false; onOpenSettings() })
                     }
                 },
                 actions = {
-                    IconButton(onClick = {
-                        searching = !searching
-                        if (!searching) { queryText = ""; viewModel.setQuery("") }
-                    }) { Icon(Icons.Default.Search, "Поиск") }
+                    if (!searching) {
+                        IconButton(onClick = { searching = true }) { Icon(Icons.Default.Search, "Поиск") }
+                    }
                 },
             )
         },
@@ -143,6 +154,7 @@ fun ChatListScreen(
                     onClick = { fabOpen = true },
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = Color.White,
+                    shape = CircleShape,
                 ) { Icon(Icons.Default.Create, "Создать") }
                 DropdownMenu(expanded = fabOpen, onDismissRequest = { fabOpen = false }) {
                     DropdownMenuItem(text = { Text("Новый чат") }, leadingIcon = { Icon(Icons.Default.Edit, null) }, onClick = { fabOpen = false; onNewChat() })
@@ -152,7 +164,7 @@ fun ChatListScreen(
         },
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
-            if (!state.showArchived) {
+            if (!state.showArchived && !searching) {
                 FilterTabs(state, viewModel)
             }
 
@@ -203,37 +215,102 @@ fun ChatListScreen(
     }
 }
 
+/** Telegram-style borderless rounded search field that lives in the top bar. */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun FilterTabs(state: ChatListUiState, viewModel: ChatListViewModel) {
-    Row(
-        Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 8.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically,
+private fun SearchPill(value: String, onValueChange: (String) -> Unit) {
+    Surface(
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        modifier = Modifier.fillMaxWidth(),
     ) {
-        @Composable
-        fun chip(label: String, selected: Boolean, badge: Int = 0, onClick: () -> Unit) {
-            FilterChip(
-                selected = selected,
-                onClick = onClick,
-                label = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(label)
-                        if (badge > 0) {
-                            Spacer(Modifier.width(6.dp))
-                            Badge { Text("$badge") }
-                        }
-                    }
-                },
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 14.dp)) {
+            Icon(Icons.Default.Search, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+            TextField(
+                value = value,
+                onValueChange = onValueChange,
+                placeholder = { Text("Поиск") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = Color.Transparent,
+                    unfocusedContainerColor = Color.Transparent,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                ),
             )
         }
-        val noFolder = state.selectedFolderId == null
-        chip("Все", noFolder && state.filter == ChatFilter.ALL) { viewModel.setFilter(ChatFilter.ALL) }
-        chip("Личные", noFolder && state.filter == ChatFilter.DMS) { viewModel.setFilter(ChatFilter.DMS) }
-        chip("Группы", noFolder && state.filter == ChatFilter.GROUPS) { viewModel.setFilter(ChatFilter.GROUPS) }
-        chip("Заявки", noFolder && state.filter == ChatFilter.REQUESTS, badge = state.requestCount) { viewModel.setFilter(ChatFilter.REQUESTS) }
-        state.folders.forEach { f ->
-            chip("${f.icon} ${f.name}", state.selectedFolderId == f.id) { viewModel.selectFolder(f.id) }
+    }
+}
+
+/**
+ * Telegram folder tabs (web `.tabs`/`.tab`): equal-width, underline indicator inset ~14% each side,
+ * active label in the lighter accent (`--acc3`). Custom folders, if any, scroll below.
+ */
+@Composable
+private fun FilterTabs(state: ChatListUiState, viewModel: ChatListViewModel) {
+    val noFolder = state.selectedFolderId == null
+    Column {
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            TabItem(Modifier.weight(1f), "Все", noFolder && state.filter == ChatFilter.ALL) { viewModel.setFilter(ChatFilter.ALL) }
+            TabItem(Modifier.weight(1f), "Личные", noFolder && state.filter == ChatFilter.DMS) { viewModel.setFilter(ChatFilter.DMS) }
+            TabItem(Modifier.weight(1f), "Группы", noFolder && state.filter == ChatFilter.GROUPS) { viewModel.setFilter(ChatFilter.GROUPS) }
+            TabItem(Modifier.weight(1f), "Заявки", noFolder && state.filter == ChatFilter.REQUESTS, count = state.requestCount) { viewModel.setFilter(ChatFilter.REQUESTS) }
         }
+        if (state.folders.isNotEmpty()) {
+            Row(
+                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                state.folders.forEach { f ->
+                    TabItem(Modifier, "${f.icon} ${f.name}", state.selectedFolderId == f.id) { viewModel.selectFolder(f.id) }
+                }
+            }
+        }
+        Box(Modifier.fillMaxWidth().height(1.dp).background(MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)))
+    }
+}
+
+@Composable
+private fun TabItem(modifier: Modifier, label: String, selected: Boolean, count: Int = 0, onClick: () -> Unit) {
+    Column(
+        modifier.clickable(onClick = onClick).padding(vertical = 11.dp, horizontal = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                label,
+                color = if (selected) TgAccent3 else MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.SemiBold,
+                style = MaterialTheme.typography.labelLarge,
+                maxLines = 1,
+            )
+            if (count > 0) {
+                Spacer(Modifier.width(6.dp))
+                CountBubble(count, selected)
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+        // Underline indicator, inset 14% each side like the web `.tab.active::after`.
+        Box(
+            Modifier.fillMaxWidth(0.72f).height(3.dp).clip(RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp))
+                .background(if (selected) MaterialTheme.colorScheme.primary else Color.Transparent),
+        )
+    }
+}
+
+@Composable
+private fun CountBubble(count: Int, selected: Boolean) {
+    val bg = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+    Box(
+        Modifier.heightIn(min = 18.dp).widthIn(min = 18.dp).clip(RoundedCornerShape(50)).background(bg)
+            .padding(horizontal = 5.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text("$count", color = Color.White, style = MaterialTheme.typography.labelSmall)
     }
 }
 
@@ -250,16 +327,18 @@ private fun ChatRowItem(
     onFolder: () -> Unit,
 ) {
     var menuOpen by remember { mutableStateOf(false) }
-    Box {
+    // Web `.chat-item` on mobile: rounded card with side margins, no dividers, rounded ripple.
+    Box(Modifier.padding(horizontal = 6.dp, vertical = 2.dp)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
                 .combinedClickable(onClick = onClick, onLongClick = { menuOpen = true })
-                .padding(horizontal = 12.dp, vertical = 8.dp),
+                .padding(horizontal = 10.dp, vertical = 9.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box {
-                Avatar(name = row.title, url = row.avatar, size = 54.dp)
+                Avatar(name = row.title, url = row.avatar, size = 48.dp)
                 if (row.online) {
                     Box(
                         Modifier
@@ -281,7 +360,7 @@ private fun ChatRowItem(
                     }
                     Text(
                         row.title,
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.bodyLarge,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         fontWeight = if (row.unread) FontWeight.Bold else FontWeight.SemiBold,
@@ -292,6 +371,7 @@ private fun ChatRowItem(
                         Icon(Icons.AutoMirrored.Filled.VolumeOff, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(14.dp))
                     }
                 }
+                Spacer(Modifier.height(2.dp))
                 Text(
                     (if (row.lastMsgMine) "Вы: " else "") + row.subtitle,
                     style = MaterialTheme.typography.bodyMedium,
@@ -308,12 +388,17 @@ private fun ChatRowItem(
                 )
                 Spacer(Modifier.height(6.dp))
                 if (row.unread) {
+                    val badgeColor = if (row.muted) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary
                     Box(
-                        Modifier.size(20.dp).clip(CircleShape)
-                            .background(if (row.muted) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary),
+                        Modifier.heightIn(min = 20.dp).widthIn(min = 20.dp).clip(RoundedCornerShape(50))
+                            .background(badgeColor).padding(horizontal = 6.dp),
                         contentAlignment = Alignment.Center,
                     ) {
-                        if (row.unreadCount > 0) Text("${row.unreadCount}", color = Color.White, style = MaterialTheme.typography.labelSmall)
+                        Text(
+                            if (row.unreadCount > 0) "${row.unreadCount}" else "",
+                            color = Color.White,
+                            style = MaterialTheme.typography.labelSmall,
+                        )
                     }
                 } else {
                     Box(Modifier.size(20.dp))

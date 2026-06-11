@@ -22,6 +22,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -55,9 +56,10 @@ fun FriendsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("New chat") },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
+                title = { Text("Новый чат", fontWeight = androidx.compose.ui.text.font.FontWeight.Bold) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
+                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Назад") }
                 },
             )
         },
@@ -66,7 +68,7 @@ fun FriendsScreen(
             OutlinedTextField(
                 value = query,
                 onValueChange = { query = it; viewModel.search(it) },
-                placeholder = { Text("Search by nickname") },
+                placeholder = { Text("Поиск по нику") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth().padding(12.dp),
             )
@@ -74,7 +76,7 @@ fun FriendsScreen(
             LazyColumn(Modifier.fillMaxSize()) {
                 if (incoming.isNotEmpty()) {
                     item {
-                        Text("Friend requests", style = MaterialTheme.typography.labelSmall,
+                        Text("Заявки в друзья", style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp))
                     }
@@ -86,8 +88,8 @@ fun FriendsScreen(
                             Avatar(req.fromNick, null, 44.dp)
                             Text(req.fromNick, Modifier.weight(1f).padding(start = 12.dp),
                                 style = MaterialTheme.typography.titleMedium)
-                            IconButton(onClick = { viewModel.accept(req) }) { Icon(Icons.Default.Check, "Accept") }
-                            IconButton(onClick = { viewModel.decline(req) }) { Icon(Icons.Default.Close, "Decline") }
+                            IconButton(onClick = { viewModel.accept(req) }) { Icon(Icons.Default.Check, "Принять", tint = com.nonsense.chat.ui.theme.OnlineGreen) }
+                            IconButton(onClick = { viewModel.decline(req) }) { Icon(Icons.Default.Close, "Отклонить", tint = MaterialTheme.colorScheme.error) }
                         }
                     }
                     item { HorizontalDivider() }
@@ -109,7 +111,7 @@ fun FriendsScreen(
                             }
                         }
                         IconButton(onClick = { viewModel.sendRequest(user) }) {
-                            Icon(Icons.Default.PersonAdd, "Add friend")
+                            Icon(Icons.Default.PersonAdd, "Добавить", tint = MaterialTheme.colorScheme.primary)
                         }
                     }
                 }

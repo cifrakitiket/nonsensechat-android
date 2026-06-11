@@ -48,6 +48,7 @@ import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
@@ -137,6 +138,7 @@ fun ChatScreen(
     Scaffold(
         topBar = {
             TopAppBar(
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
                 title = {
                     Row(
                         Modifier.fillMaxWidth().clickable {
@@ -145,7 +147,7 @@ fun ChatScreen(
                         },
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Avatar(state.title, state.avatarUrl, size = 38.dp)
+                        Avatar(state.title, state.avatarUrl, size = 40.dp)
                         Box(Modifier.width(10.dp))
                         Column {
                             Text(state.title, style = MaterialTheme.typography.titleMedium,
@@ -158,7 +160,7 @@ fun ChatScreen(
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
+                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Назад") }
                 },
                 actions = {
                     IconButton(onClick = { requestCall { viewModel.startCall(false); onOpenCall(viewModel.chatId) } }) {
@@ -339,10 +341,19 @@ private fun ForwardDialog(
 
 @Composable
 private fun DayHeader(label: String) {
-    Box(Modifier.fillMaxWidth().padding(vertical = 4.dp), contentAlignment = Alignment.Center) {
-        Surface(color = MaterialTheme.colorScheme.surfaceVariant, shape = MaterialTheme.shapes.small) {
-            Text(label, style = MaterialTheme.typography.labelSmall,
-                modifier = Modifier.padding(horizontal = 10.dp, vertical = 2.dp))
+    // Telegram-style floating, pill-shaped, semi-transparent date chip centred over the wallpaper.
+    Box(Modifier.fillMaxWidth().padding(vertical = 6.dp), contentAlignment = Alignment.Center) {
+        Surface(
+            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.82f),
+            shape = RoundedCornerShape(50),
+        ) {
+            Text(
+                label,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+            )
         }
     }
 }

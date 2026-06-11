@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChatBubbleOutline
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -31,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.nonsense.chat.ui.common.TgGradientButton
 
 @Composable
 fun AuthScreen(viewModel: AuthViewModel = hiltViewModel()) {
@@ -54,7 +54,7 @@ fun AuthScreen(viewModel: AuthViewModel = hiltViewModel()) {
             Spacer(Modifier.height(12.dp))
             Text("Nonsense Chat", style = MaterialTheme.typography.titleLarge)
             Text(
-                if (state.isSignUp) "Create an account" else "Welcome back",
+                if (state.isSignUp) "Создать аккаунт" else "С возвращением",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -64,7 +64,7 @@ fun AuthScreen(viewModel: AuthViewModel = hiltViewModel()) {
                 OutlinedTextField(
                     value = nick,
                     onValueChange = { nick = it },
-                    label = { Text("Nickname") },
+                    label = { Text("Никнейм") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -81,7 +81,7 @@ fun AuthScreen(viewModel: AuthViewModel = hiltViewModel()) {
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
-                label = { Text("Password") },
+                label = { Text("Пароль") },
                 singleLine = true,
                 visualTransformation = PasswordVisualTransformation(),
                 modifier = Modifier.fillMaxWidth(),
@@ -93,19 +93,17 @@ fun AuthScreen(viewModel: AuthViewModel = hiltViewModel()) {
             }
 
             Spacer(Modifier.height(20.dp))
-            Button(
-                onClick = { viewModel.submit(email, password, nick) },
-                enabled = !state.loading,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                if (state.loading) {
-                    CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
-                } else {
-                    Text(if (state.isSignUp) "Sign up" else "Sign in")
-                }
+            if (state.loading) {
+                CircularProgressIndicator(Modifier.size(28.dp), strokeWidth = 3.dp)
+            } else {
+                TgGradientButton(
+                    text = if (state.isSignUp) "Зарегистрироваться" else "Войти",
+                    onClick = { viewModel.submit(email, password, nick) },
+                    modifier = Modifier.fillMaxWidth(),
+                )
             }
             TextButton(onClick = viewModel::toggleMode) {
-                Text(if (state.isSignUp) "Have an account? Sign in" else "No account? Sign up")
+                Text(if (state.isSignUp) "Уже есть аккаунт? Войти" else "Нет аккаунта? Зарегистрироваться")
             }
         }
     }

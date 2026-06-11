@@ -96,8 +96,8 @@ fun hasSpoiler(text: String): Boolean = text.contains("||")
 /** First URL that can be shown as an inline preview (image or YouTube), or null. */
 fun previewUrl(text: String): String? = URL_REGEX.find(text)?.value?.takeIf {
     it.contains("youtube.com/watch") || it.contains("youtu.be/") ||
-            it.endsWith(".jpg", true) || it.endsWith(".jpeg", true) ||
-            it.endsWith(".png", true) || it.endsWith(".gif", true) || it.endsWith(".webp", true)
+        it.endsWith(".jpg", true) || it.endsWith(".jpeg", true) ||
+        it.endsWith(".png", true) || it.endsWith(".gif", true) || it.endsWith(".webp", true)
 }
 
 /** YouTube thumbnail URL for a watch/short link, or null if not YouTube. */

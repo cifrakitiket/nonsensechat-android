@@ -12,8 +12,9 @@ val TgBorder = Color(0x265B8FB9)        // --border: rgba(88,139,179,0.15)
 val TgInBubble = Color(0xFF1E2C3A)      // --msg-in-bg
 val TgOutGradTop = Color(0xFF2B5278)    // --msg-out-bg start
 val TgOutGradBottom = Color(0xFF1E3A5F) // --msg-out-bg end
-val TgAccent = Color(0xFF5B8FB9)        // --grad start (send button / accents)
+val TgAccent = Color(0xFF5B8FB9)        // --acc: send button / accents / badges / links (web canonical)
 val TgAccent2 = Color(0xFF8B6FC4)       // --grad end
+val TgAccent3 = Color(0xFF7AB3D9)       // --acc3: lighter accent (author names, active tab, read checks)
 val TgChatWallTop = Color(0xFF11202E)   // chat wallpaper gradient (subtle, around --bg)
 val TgChatWallBottom = Color(0xFF0B131C)
 

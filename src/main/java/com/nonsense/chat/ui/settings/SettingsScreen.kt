@@ -24,6 +24,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -49,9 +50,10 @@ fun SettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Settings") },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
+                title = { Text("Настройки", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
+                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Назад") }
                 },
             )
         },
@@ -69,17 +71,17 @@ fun SettingsScreen(
                         Text("@${me?.username}", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
-                Icon(Icons.Default.Edit, "Edit profile")
+                Icon(Icons.Default.Edit, "Редактировать", tint = MaterialTheme.colorScheme.primary)
             }
             HorizontalDivider()
 
-            SectionTitle("Theme")
+            SectionTitle("Тема")
             val themes = listOf(
-                AppTheme.DYNAMIC to "Material You (dynamic)",
-                AppTheme.DARK to "Dark",
-                AppTheme.COFFEE to "Coffee dark",
-                AppTheme.LIGHT to "Light",
-                AppTheme.GRADIENT to "Gradient",
+                AppTheme.DYNAMIC to "Material You (динамическая)",
+                AppTheme.DARK to "Тёмная",
+                AppTheme.COFFEE to "Кофейная",
+                AppTheme.LIGHT to "Светлая",
+                AppTheme.GRADIENT to "Градиент",
             )
             themes.forEach { (value, label) ->
                 Row(
@@ -93,9 +95,9 @@ fun SettingsScreen(
             }
             HorizontalDivider()
 
-            SectionTitle("Privacy & notifications")
-            ToggleRow("Enable notifications", notifications) { viewModel.setNotifications(it) }
-            ToggleRow("Hide last seen", me?.hideLastSeen == true) { viewModel.setHideLastSeen(it) }
+            SectionTitle("Приватность и уведомления")
+            ToggleRow("Уведомления", notifications) { viewModel.setNotifications(it) }
+            ToggleRow("Скрывать «был(а) в сети»", me?.hideLastSeen == true) { viewModel.setHideLastSeen(it) }
             HorizontalDivider()
 
             Row(
@@ -103,7 +105,7 @@ fun SettingsScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(Icons.AutoMirrored.Filled.Logout, null, tint = MaterialTheme.colorScheme.error)
-                Text("Sign out", Modifier.padding(start = 16.dp), color = MaterialTheme.colorScheme.error)
+                Text("Выйти", Modifier.padding(start = 16.dp), color = MaterialTheme.colorScheme.error)
             }
             Spacer(Modifier.height(24.dp))
         }
