@@ -1159,6 +1159,7 @@ html.is-webview .sidebar{border-right:none;}
       <div class="auth-logo-spin" id="authLogoSpin">
         <img src="logo.png" onerror="this.style.display='none';this.parentElement.classList.add('auth-logo-spin-fallback')">
       </div>
+      <div style="position:absolute;bottom:8px;left:0;right:0;text-align:center;font-size:10px;opacity:.35;">build fix5</div>
     </div>
     <div class="auth-form hidden" id="authForm">
       <div class="auth-logo">
@@ -1859,9 +1860,26 @@ html.is-webview .sidebar{border-right:none;}
    ════════════════════════════════════════════════════════════════════════ */
 const SB_URL = 'https://xpkiirwnpxyfwbrktmqm.supabase.co';
 const SB_KEY = 'sb_publishable_RiO2j0EsDPsJ0mO7v-7ebw_g1rI1jqc';
+/* fetch с таймаутом: на проблемных сетях запросы ЗАВИСАЮТ без ответа,
+   а у fetch нет таймаута по умолчанию -> await висел вечно, бут замирал на логотипе.
+   GET 15с, запись/upload 60с; по таймауту AbortError -> sbCall ретраит. */
+function nsFetch(input, init){
+  init = init || {};
+  const method = ((init.method)||'GET').toUpperCase();
+  const ms = (method==='GET'||method==='HEAD') ? 15000 : 60000;
+  const ctrl = new AbortController();
+  const timer = setTimeout(function(){ try{ ctrl.abort(); }catch(e){} }, ms);
+  if(init.signal){
+    const sig = init.signal;
+    if(sig.aborted){ try{ ctrl.abort(); }catch(e){} }
+    else sig.addEventListener('abort', function(){ try{ ctrl.abort(); }catch(e){} }, {once:true});
+  }
+  return fetch(input, Object.assign({}, init, {signal: ctrl.signal})).finally(function(){ clearTimeout(timer); });
+}
 const sb = window.supabase.createClient(SB_URL, SB_KEY, {
   auth: { persistSession: true, autoRefreshToken: true },
-  realtime: { params: { eventsPerSecond: 20 } }
+  realtime: { params: { eventsPerSecond: 20 } },
+  global: { fetch: nsFetch }
 });
 
 /* ── Карта коллекций Firestore → таблиц Postgres ── */
@@ -1934,16 +1952,32 @@ function buildOps(obj){           // ключи верхнего уровня м
 }
 
 /* ── Ретрай на сетевых сбоях (холодный старт Supabase, блипы) ── */
+/* ВАЖНО: postgrest НЕ кидает исключение при сетевой ошибке — он РЕЗОЛВИТ промис
+   объектом {error}. Поэтому ретраим и resolved-{error}, и исключения. */
+function nsIsNetErr(e){
+  const m = ((e&&e.message)||String(e||'')).toLowerCase();
+  return (e&&e.name==='AbortError') || /failed to fetch|networkerror|network request failed|load failed|fetch|abort|timeout|timed out/.test(m);
+}
 async function sbCall(fn, tries){
   tries = tries||3;
+  let lastRes=null, lastErr=null;
   for(let i=0;i<tries;i++){
-    try{ return await fn(); }
-    catch(e){
-      const net = /failed to fetch|networkerror|load failed|fetch/i.test((e&&e.message)||'');
-      if(i===tries-1 || !net) throw e;
+    try{
+      const res = await fn();
+      if(res && res.error && nsIsNetErr(res.error) && i<tries-1){
+        lastRes=res;
+        await new Promise(r=>setTimeout(r, 400*(i+1)));
+        continue;
+      }
+      return res;
+    }catch(e){
+      lastErr=e;
+      if(i===tries-1 || !nsIsNetErr(e)) throw e;
       await new Promise(r=>setTimeout(r, 400*(i+1)));
     }
   }
+  if(lastRes) return lastRes;
+  throw lastErr;
 }
 
 /* ── Вызов RPC (родитель chat_id/user_id хранится прямо в doc) ── */
@@ -2039,11 +2073,15 @@ class DocRef {
   async update(obj){ await rpcApply(this.table, this.id, buildOps(withParent(obj, this.parent))); }
   async delete(){ const {error}=await sbCall(()=> sb.rpc('doc_delete',{_table:this.table,_id:this.id})); if(error) throw new Error(error.message); }
   onSnapshot(cb, errCb){
-    let stopped=false;
-    const run = async()=>{ try{ if(!stopped) cb(await this.get()); }catch(e){ errCb&&errCb(e); } };
+    let stopped=false, retryT=null;
+    const run = async()=>{
+      if(stopped) return;
+      try{ cb(await this.get()); }
+      catch(e){ errCb&&errCb(e); if(!stopped){ clearTimeout(retryT); retryT=setTimeout(run, 8000); } } // ретрай до успеха — иначе зависший первый запрос = пустой экран навсегда
+    };
     const unsub = rtAdd(this.table, { match: p=> (p.new&&p.new.id===this.id)||(p.old&&p.old.id===this.id), run });
     run();
-    return ()=>{ stopped=true; unsub(); };
+    return ()=>{ stopped=true; clearTimeout(retryT); unsub(); };
   }
 }
 
@@ -2057,13 +2095,17 @@ class CollectionRef {
   async add(obj){ const ref=this.doc(genId()); await ref.set(obj); return ref; }
   async get(){ const rows=await runQuery(this); return makeQuerySnap(this.table, rows, this.parent, null); }
   onSnapshot(cb, errCb){
-    let stopped=false, prevMap=null;
+    let stopped=false, prevMap=null, retryT=null;
     const pv = this.parent ? this.parent.val : null, pc = this.parent ? this.parent.col : null;
-    const run = async()=>{ try{ if(stopped) return; const rows=await runQuery(this); const qs=makeQuerySnap(this.table, rows, this.parent, prevMap); prevMap=qs._map; cb(qs); }catch(e){ errCb&&errCb(e); } };
+    const run = async()=>{
+      if(stopped) return;
+      try{ const rows=await runQuery(this); const qs=makeQuerySnap(this.table, rows, this.parent, prevMap); prevMap=qs._map; cb(qs); }
+      catch(e){ errCb&&errCb(e); if(!stopped){ clearTimeout(retryT); retryT=setTimeout(run, 8000); } } // ретрай до успеха — чаты «вообще не грузились» когда первый запрос падал
+    };
     const match = p => !pc || (p.new&&p.new[pc]===pv) || (p.old&&p.old[pc]===pv);
     const unsub = rtAdd(this.table, { match, run });
     run();
-    return ()=>{ stopped=true; unsub(); };
+    return ()=>{ stopped=true; clearTimeout(retryT); unsub(); };
   }
 }
 
@@ -2120,7 +2162,7 @@ const auth = {
       if(uid === lastUid) return;      // дедуп повторных событий (token refresh и т.п.)
       lastUid = uid; cb(u);
     };
-    sb.auth.getSession().then(({data})=> emit(data.session));
+    sb.auth.getSession().then(({data})=> emit(data.session)).catch(()=> emit(null));
     sb.auth.onAuthStateChange((_e, session)=> emit(session));
     return ()=>{};
   },
@@ -2361,24 +2403,46 @@ function hideAuthScreen(){
   document.getElementById('auth-screen').style.display='none';
 }
 
+/* Сторожевой таймер бута: если логотип висит >10с — дотягиваем недостающие куски.
+   Раньше один зависший/упавший запрос в цепочке await навсегда замораживал сплеш. */
+let bootWatchTimer=null;
+function startBootWatchdog(user){
+  if(bootWatchTimer){clearInterval(bootWatchTimer);}
+  bootWatchTimer=setInterval(async()=>{
+    if(loadingComplete){clearInterval(bootWatchTimer);bootWatchTimer=null;return;}
+    try{
+      if(!appLoadedFlags.profile){
+        const d=await db.collection('users').doc(user.uid).get();
+        if(d.exists){me=d.data();appLoadedFlags.profile=true;checkAppReady();}
+      }
+      if(me&&!appLoadedFlags.folders)await loadFolders();
+      if(me&&!appLoadedFlags.chats)await loadChats();
+    }catch(e){}
+  },10000);
+}
 auth.onAuthStateChanged(async user=>{
   if(!user){
     if(presenceHeartbeatTimer){clearInterval(presenceHeartbeatTimer);presenceHeartbeatTimer=null;}
+    if(bootWatchTimer){clearInterval(bootWatchTimer);bootWatchTimer=null;}
     notifReset();
     showAuthForm();
     return;
   }
   showAuthLoading();
-  const snap=await db.collection('users').doc(user.uid).get();
-  if(!snap.exists)await db.collection('users').doc(user.uid).set({uid:user.uid,nick:user.email.split('@')[0],nickLower:user.email.split('@')[0].toLowerCase(),avatar:'',bio:'',fname:'',lname:'',bday:'',phone:'',username:'',lastSeen:firebase.firestore.FieldValue.serverTimestamp(),online:true});
-  await db.collection('users').doc(user.uid).update({online:true,lastSeen:firebase.firestore.FieldValue.serverTimestamp()});
+  try{
+    const snap=await db.collection('users').doc(user.uid).get();
+    if(!snap.exists)await db.collection('users').doc(user.uid).set({uid:user.uid,nick:user.email.split('@')[0],nickLower:user.email.split('@')[0].toLowerCase(),avatar:'',bio:'',fname:'',lname:'',bday:'',phone:'',username:'',lastSeen:firebase.firestore.FieldValue.serverTimestamp(),online:true});
+  }catch(e){console.log('NSDIAG boot profile-ensure',e&&e.message);}
+  // presence-запись не критична для UI — не блокируем ею бут
+  db.collection('users').doc(user.uid).update({online:true,lastSeen:firebase.firestore.FieldValue.serverTimestamp()}).catch(()=>{});
   if(presenceHeartbeatTimer)clearInterval(presenceHeartbeatTimer);
   presenceHeartbeatTimer=setInterval(()=>{
     db.collection('users').doc(user.uid).update({lastSeen:firebase.firestore.FieldValue.serverTimestamp()}).catch(()=>{});
   },45000);
   chatsLoadedOnce=false;
   db.collection('users').doc(user.uid).onSnapshot(async d=>{
-    me=d.data();
+    if(d&&d.exists)me=d.data();
+    if(!me)return;
     document.getElementById('myNick').innerHTML='@'+me.nick+(me.uid===CREATOR_UID?' <span class="dev-badge" title="Разработчик">&lt;/&gt;</span>':'');
     document.getElementById('mySub').innerText=me.bio||'В сети';
     document.getElementById('myAva').src=me.avatar||'';
@@ -2387,10 +2451,11 @@ auth.onAuthStateChanged(async user=>{
     loadStickerPacks();
     if(!chatsLoadedOnce){
       chatsLoadedOnce=true;
-      await loadFolders();
-      await loadChats();
+      try{await loadFolders();}catch(e){console.log('NSDIAG folders',e&&e.message);appLoadedFlags.folders=true;checkAppReady();}
+      try{await loadChats();}catch(e){console.log('NSDIAG chats',e&&e.message);chatsLoadedOnce=false;}
     }
   });
+  startBootWatchdog(user);
 });
 window.addEventListener('beforeunload',()=>{
   if(me) db.collection('users').doc(me.uid).update({online:false,lastSeen:firebase.firestore.FieldValue.serverTimestamp()});
@@ -7652,10 +7717,9 @@ window.NoiseSuppressor = (function() {
   return { toggleNS: toggleNS, togglePanel: togglePanel, setStrength: setStrength, setMode: setMode, teardown: teardown };
 })();
 
-/* ── Stop browser loading spinner ── */
-document.addEventListener('DOMContentLoaded', function() {
-  setTimeout(function() { window.stop(); }, 100);
-});
+/* (удалено) window.stop() обрывал ВСЕ живые запросы (auth/REST/WS/картинки)
+   через 100мс после load — из-за этого всё грузилось с ретраями или зависало.
+   Таймауты теперь решает nsFetch. НЕ ВОЗВРАЩАТЬ ЭТОТ БЛОК. */
 </script>
 
 <!-- ===========================================================
