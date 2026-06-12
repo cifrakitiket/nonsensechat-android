@@ -70,6 +70,10 @@ public class WebViewActivity extends AppCompatActivity {
         s.setUseWideViewPort(true);
         s.setSupportZoom(false);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE);
+        // Reuse on-disk HTTP cache (proxied avatars / photos) across launches; only re-fetch
+        // when a cached response is stale or missing. Local assets are served instantly by the
+        // WebViewAssetLoader regardless.
+        s.setCacheMode(WebSettings.LOAD_DEFAULT);
         // Custom UA token so the page knows it runs inside our wrapper.
         s.setUserAgentString(s.getUserAgentString() + " NonsenseApp/1.0");
 

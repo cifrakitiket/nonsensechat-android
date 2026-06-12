@@ -1849,7 +1849,7 @@ html.is-webview .sidebar{border-right:none;}
 </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="vendor/supabase.js"></script>
 <script>
 /* ════════════════════════════════════════════════════════════════════════
    SUPABASE BACKEND + FIREBASE-COMPAT SHIM
@@ -7736,18 +7736,33 @@ document.addEventListener('DOMContentLoaded', function() {
 
   /* ---------- Image proxy (phones / WebView only) ---------- */
   var PROXY_ON = h.classList.contains('is-mobile') || isWebView;
-  function nsProxy(u){
+  // Pick a proxy width from how the <img> is actually rendered. A 48dp avatar does NOT
+  // need a 1280px source — a 1.7MB upload becomes a ~10KB webp at 192px. This is the
+  // single biggest payload cut when the chat list and message avatars load on a phone.
+  function nsWidth(img){
+    var c = '';
+    try { c = String(img.className && img.className.baseVal !== undefined ? img.className.baseVal : (img.className || '')); } catch(e){}
+    if (/profile-ava-big/i.test(c)) return 512;            // full-screen profile photo
+    if (/(?:^|[-_\b])ava(?:[-_\b]|$)|avatar|mava|tile-ava/i.test(c)) return 192; // round avatars
+    if (/sticker/i.test(c)) return 256;
+    return 1280; // inline photos / unknown
+  }
+  function nsProxy(u, w){
     if (!PROXY_ON || !u || typeof u !== 'string') return u;
     if (u.indexOf('images.weserv.nl') >= 0) return u;
     if (u.indexOf('/storage/v1/object/public/') < 0) return u; // only Supabase Storage public files
     var src = u.replace(/^https?:\/\//, '');
-    return 'https://images.weserv.nl/?url=' + encodeURIComponent(src) + '&w=1280&output=webp&n=-1';
+    return 'https://images.weserv.nl/?url=' + encodeURIComponent(src) + '&w=' + (w || 1280) + '&output=webp&n=-1';
   }
   function fixImg(img){
     try{
+      if (img.getAttribute('data-ns-orig')) return; // already processed
+      // Defer offscreen images (long history, sticker grids) so they don't all fetch at once.
+      if (!img.getAttribute('loading'))  img.setAttribute('loading', 'lazy');
+      if (!img.getAttribute('decoding')) img.setAttribute('decoding', 'async');
       var s = img.getAttribute('src');
       if (!s) return;
-      var p = nsProxy(s);
+      var p = nsProxy(s, nsWidth(img));
       if (p !== s){ img.setAttribute('data-ns-orig', s); img.src = p; }
     }catch(e){}
   }
