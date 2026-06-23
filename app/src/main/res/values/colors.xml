@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brand background from the web app (manifest.webmanifest theme_color). -->
+    <color name="brand_bg">#0E1420</color>
+</resources>

@@ -1,0 +1,19 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.nonsense.chat.app-mergeDebugResources-71:/values-v30/values-v30.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\ALEXANDER\\.gradle\\caches\\8.10.2\\transforms\\0de7a1fe249f245efbe6119dd6152e40\\transformed\\material3-release\\res\\values-v30\\values-v30.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "72",
+                        "endOffsets": "123"
+                    }
+                }
+            ]
+        }
+    ]
+}

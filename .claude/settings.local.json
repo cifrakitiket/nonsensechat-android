@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs grep -l \"AsyncImage\\\\|AsyncImagePainter\\\\|rememberAsyncImagePainter\")",
+      "Bash(xargs grep -l \"okhttp\\\\|Okhttp\\\\|OkHttp\")",
+      "Bash(xargs grep -l \"Room\\\\|Database\\\\|SQLite\\\\|@Entity\\\\|@Dao\")",
+      "Bash(xargs grep -l \"Paging\\\\|PagingSource\\\\|RemoteMediator\")",
+      "Bash(xargs grep -l \"LazyColumn\\\\|LazyRow\")",
+      "Bash(F:/AndroidStudio/jbr/bin/java.exe -Dorg.gradle.appname=gradlew -Dorg.gradle.java.home=F:/AndroidStudio/jbr -classpath gradle/wrapper/gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain compileDebugKotlin --console=plain)",
+      "Bash(F:/AndroidStudio/jbr/bin/java.exe -Dorg.gradle.appname=gradlew -Dorg.gradle.java.home=F:/AndroidStudio/jbr -classpath gradle/wrapper/gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain assembleDebug --console=plain)",
+      "Bash(xargs grep -l \"data class User\")",
+      "Bash(xargs grep -l \"Coil\\\\|coil\\\\|AsyncImage\")",
+      "Bash(grep -rn \"startsWith.*http\\\\|http:\\\\/\\\\/\\\\|https:\\\\/\\\\/\" \"F:\\\\Загрузки\\\\messenger\\\\android\\\\app\\\\src\\\\main\\\\java\\\\com\\\\nonsense\\\\chat\" --include=\"*.kt\")",
+      "Bash(grep -v \"^.*:.*//\\\\s*\")"
+    ]
+  }
+}

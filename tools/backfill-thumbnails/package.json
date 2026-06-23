@@ -1,0 +1,15 @@
+{
+  "name": "backfill-thumbnails",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "One-time backfill of ~320px preview thumbnails for old photo messages (service-role).",
+  "scripts": {
+    "dry-run": "node backfill.mjs --dry-run",
+    "start": "node backfill.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "sharp": "^0.33.4"
+  }
+}
