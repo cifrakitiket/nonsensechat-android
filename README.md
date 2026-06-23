@@ -38,8 +38,6 @@ domain/ → UseCases, бизнес-логика
 data/ → Repository, API, источники данных
 di/ → Dependency Injection
 
-text
-
 
 ### Принципы
 
