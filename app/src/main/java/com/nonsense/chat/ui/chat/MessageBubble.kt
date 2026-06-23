@@ -19,13 +19,19 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.shape.GenericShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.BrokenImage
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.DoneAll
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -166,6 +172,26 @@ fun MessageBubble(
             ui = ui, isGroup = isGroup, isPinned = isPinned, readByOther = readByOther,
             onReact = onReact, onOpenPack = onOpenPack, onReply = onReply, onForward = onForward,
             onPin = onPin, onUnpin = onUnpin, onDelete = onDelete, onAuthorClick = onAuthorClick,
+        )
+        return
+    }
+
+    if (msg.type == MsgType.PHOTO && !msg.deleted) {
+        PhotoMessageRow(
+            ui = ui, isGroup = isGroup, isPinned = isPinned, readByOther = readByOther,
+            onReact = onReact, onImageClick = onImageClick, onReply = onReply,
+            onForward = onForward, onPin = onPin, onUnpin = onUnpin, onDelete = onDelete,
+            onAuthorClick = onAuthorClick,
+        )
+        return
+    }
+
+    if (msg.type == MsgType.VIDEO && !msg.deleted) {
+        VideoMessageRow(
+            ui = ui, isGroup = isGroup, isPinned = isPinned, readByOther = readByOther,
+            onReact = onReact, onOpenUrl = onOpenUrl, onReply = onReply,
+            onForward = onForward, onPin = onPin, onUnpin = onUnpin, onDelete = onDelete,
+            onAuthorClick = onAuthorClick,
         )
         return
     }
@@ -331,7 +357,252 @@ private fun MessageActionsMenu(
     }
 }
 
+@Composable
+private fun UploadCircle(failed: Boolean, modifier: Modifier = Modifier) {
+    Surface(
+        color = Color(0xAA000000),
+        shape = CircleShape,
+        modifier = modifier.size(52.dp),
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            if (failed) {
+                Text("!", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+            } else {
+                CircularProgressIndicator(
+                    color = Color.White,
+                    strokeWidth = 3.dp,
+                    modifier = Modifier.size(34.dp),
+                )
+            }
+        }
+    }
+}
+
+/** Bubble-less photo message: rounded media only, with time/read state overlaid like Telegram. */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun PhotoMessageRow(
+    ui: MessageUi,
+    isGroup: Boolean,
+    isPinned: Boolean,
+    readByOther: Boolean,
+    onReact: (String) -> Unit,
+    onImageClick: (String) -> Unit,
+    onReply: () -> Unit,
+    onForward: () -> Unit,
+    onPin: () -> Unit,
+    onUnpin: () -> Unit,
+    onDelete: () -> Unit,
+    onAuthorClick: (String) -> Unit,
+) {
+    val msg = ui.message
+    val mine = ui.isMine
+    val chat = LocalChatColors.current
+    var menu by remember { mutableStateOf(false) }
+    var revealed by remember { mutableStateOf(!msg.isSpoiler) }
+    val url = msg.photoUrl
+    val preview = msg.photoThumbUrl?.ifBlank { null } ?: url
+
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp),
+        horizontalArrangement = if (mine) Arrangement.End else Arrangement.Start,
+        verticalAlignment = Alignment.Bottom,
+    ) {
+        if (!mine && isGroup) {
+            if (ui.lastInGroup) {
+                Avatar(ui.authorName, ui.authorAvatar, size = 32.dp,
+                    modifier = Modifier.clickable { onAuthorClick(msg.uid) })
+            } else {
+                Box(Modifier.size(32.dp))
+            }
+            Box(Modifier.width(6.dp))
+        }
+
+        Column(horizontalAlignment = if (mine) Alignment.End else Alignment.Start) {
+            Box(
+                modifier = Modifier
+                    .widthIn(max = 280.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .combinedClickable(
+                        onClick = {
+                            if (!revealed) revealed = true
+                            else url?.let(onImageClick)
+                        },
+                        onLongClick = { menu = true },
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (msg.localBytes != null) {
+                    AsyncImage(
+                        model = msg.localBytes,
+                        contentDescription = msg.caption,
+                        contentScale = ContentScale.FillWidth,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .then(if (!revealed) Modifier.blur(24.dp) else Modifier),
+                    )
+                } else if (!preview.isNullOrBlank()) {
+                    SubcomposeAsyncImage(
+                        model = preview,
+                        contentDescription = msg.caption,
+                        contentScale = ContentScale.FillWidth,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .then(if (!revealed) Modifier.blur(24.dp) else Modifier),
+                    ) {
+                        when (painter.state) {
+                            is AsyncImagePainter.State.Loading ->
+                                PhotoStatusBox(MaterialTheme.colorScheme.onSurfaceVariant, loading = true)
+                            is AsyncImagePainter.State.Error ->
+                                PhotoStatusBox(MaterialTheme.colorScheme.onSurfaceVariant, loading = false)
+                            else -> SubcomposeAsyncImageContent()
+                        }
+                    }
+                } else {
+                    PhotoStatusBox(MaterialTheme.colorScheme.onSurfaceVariant, loading = false)
+                }
+
+                if (!revealed) {
+                    Surface(color = Color(0x99000000), shape = RoundedCornerShape(50)) {
+                        Text(
+                            "Спойлер",
+                            color = Color.White,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        )
+                    }
+                }
+
+                if (msg.localUpload) {
+                    UploadCircle(msg.localFailed, Modifier.align(Alignment.Center))
+                }
+
+                Surface(
+                    color = Color(0x99000000),
+                    shape = RoundedCornerShape(50),
+                    modifier = Modifier.align(Alignment.BottomEnd).padding(6.dp),
+                ) {
+                    Box(Modifier.padding(horizontal = 7.dp, vertical = 3.dp)) {
+                        TimeMeta(msg.at_, mine, readByOther, Color.White, chat.accentLight)
+                    }
+                }
+            }
+
+            if (!msg.caption.isNullOrBlank()) {
+                Text(
+                    msg.caption!!,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.widthIn(max = 280.dp).padding(top = 4.dp, start = 4.dp, end = 4.dp),
+                )
+            }
+
+            ReactionsRow(msg.groupedReactions(), onReact)
+            MessageActionsMenu(
+                expanded = menu, onDismiss = { menu = false }, mine = mine, msg = msg, isPinned = isPinned,
+                onReact = onReact, onReply = onReply, onForward = onForward, onCopy = {},
+                onPin = onPin, onUnpin = onUnpin, onEdit = {}, onDelete = onDelete,
+            )
+        }
+    }
+}
+
 /** Bubble-less sticker message (Telegram style): plain image/glyph, aligned, tap → open pack. */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun VideoMessageRow(
+    ui: MessageUi,
+    isGroup: Boolean,
+    isPinned: Boolean,
+    readByOther: Boolean,
+    onReact: (String) -> Unit,
+    onOpenUrl: (String) -> Unit,
+    onReply: () -> Unit,
+    onForward: () -> Unit,
+    onPin: () -> Unit,
+    onUnpin: () -> Unit,
+    onDelete: () -> Unit,
+    onAuthorClick: (String) -> Unit,
+) {
+    val msg = ui.message
+    val mine = ui.isMine
+    val chat = LocalChatColors.current
+    var menu by remember { mutableStateOf(false) }
+
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp),
+        horizontalArrangement = if (mine) Arrangement.End else Arrangement.Start,
+        verticalAlignment = Alignment.Bottom,
+    ) {
+        if (!mine && isGroup) {
+            if (ui.lastInGroup) {
+                Avatar(ui.authorName, ui.authorAvatar, size = 32.dp,
+                    modifier = Modifier.clickable { onAuthorClick(msg.uid) })
+            } else {
+                Box(Modifier.size(32.dp))
+            }
+            Box(Modifier.width(6.dp))
+        }
+
+        Column(horizontalAlignment = if (mine) Alignment.End else Alignment.Start) {
+            Box(
+                modifier = Modifier
+                    .size(220.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .combinedClickable(
+                        onClick = { if (!msg.localUpload) msg.fileUrl?.let(onOpenUrl) },
+                        onLongClick = { menu = true },
+                    )
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    Icons.Default.Videocam,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f),
+                    modifier = Modifier.size(58.dp),
+                )
+                if (msg.localUpload) {
+                    UploadCircle(msg.localFailed, Modifier.align(Alignment.Center))
+                } else {
+                    Surface(color = Color(0x99000000), shape = CircleShape) {
+                        Icon(
+                            Icons.Default.PlayArrow,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.padding(10.dp).size(32.dp),
+                        )
+                    }
+                }
+                Surface(
+                    color = Color(0x99000000),
+                    shape = RoundedCornerShape(50),
+                    modifier = Modifier.align(Alignment.BottomEnd).padding(6.dp),
+                ) {
+                    Box(Modifier.padding(horizontal = 7.dp, vertical = 3.dp)) {
+                        TimeMeta(msg.at_, mine, readByOther, Color.White, chat.accentLight)
+                    }
+                }
+            }
+            msg.fileName?.let {
+                Text(
+                    it,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    style = MaterialTheme.typography.labelMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.widthIn(max = 220.dp).padding(top = 4.dp, start = 4.dp, end = 4.dp),
+                )
+            }
+            ReactionsRow(msg.groupedReactions(), onReact)
+            MessageActionsMenu(
+                expanded = menu, onDismiss = { menu = false }, mine = mine, msg = msg, isPinned = isPinned,
+                onReact = onReact, onReply = onReply, onForward = onForward, onCopy = {},
+                onPin = onPin, onUnpin = onUnpin, onEdit = {}, onDelete = onDelete,
+            )
+        }
+    }
+}
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun StickerMessageRow(

@@ -36,6 +36,7 @@ import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Photo
 import androidx.compose.material.icons.filled.Poll
 import androidx.compose.material.icons.filled.PlayCircle
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -86,6 +87,8 @@ private data class MediaItem(val uri: Uri, val isVideo: Boolean)
 fun AttachSheet(
     onDismiss: () -> Unit,
     onSendPhoto: (PickedFile) -> Unit,
+    onSendVideo: (PickedFile) -> Unit,
+    onSendAudio: (PickedFile) -> Unit,
     onSendFile: (PickedFile) -> Unit,
     onCreatePoll: () -> Unit,
 ) {
@@ -110,6 +113,15 @@ fun AttachSheet(
         scope.launch {
             val f = withContext(Dispatchers.IO) { readUri(context, uri) } ?: return@launch
             onSendFile(f)
+            onDismiss()
+        }
+    }
+
+    val audioPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        scope.launch {
+            val f = withContext(Dispatchers.IO) { readUri(context, uri) } ?: return@launch
+            onSendAudio(f)
             onDismiss()
         }
     }
@@ -140,7 +152,7 @@ fun AttachSheet(
         scope.launch {
             for (uri in toSend) {
                 val f = withContext(Dispatchers.IO) { readUri(context, uri) } ?: continue
-                if (byUri[uri]?.isVideo == true) onSendFile(f) else onSendPhoto(f)
+                if (byUri[uri]?.isVideo == true) onSendVideo(f) else onSendPhoto(f)
             }
             onDismiss()
         }
@@ -160,6 +172,9 @@ fun AttachSheet(
                 }
                 AttachAction(Icons.AutoMirrored.Filled.InsertDriveFile, "Файл") {
                     filePicker.launch("*/*")
+                }
+                AttachAction(Icons.Default.Mic, "Audio") {
+                    audioPicker.launch("audio/*")
                 }
                 AttachAction(Icons.Default.Poll, "Опрос") {
                     onDismiss(); onCreatePoll()

@@ -462,75 +462,75 @@ public final class DaggerNonsenseApp_HiltComponents_SingletonC {
 
     @IdentifierNameString
     private static final class LazyClassKeyProvider {
-      static String com_nonsense_chat_ui_group_NewGroupViewModel = "com.nonsense.chat.ui.group.NewGroupViewModel";
-
       static String com_nonsense_chat_ui_profile_EditProfileViewModel = "com.nonsense.chat.ui.profile.EditProfileViewModel";
-
-      static String com_nonsense_chat_ui_chat_StickerPackViewModel = "com.nonsense.chat.ui.chat.StickerPackViewModel";
-
-      static String com_nonsense_chat_ui_settings_SettingsViewModel = "com.nonsense.chat.ui.settings.SettingsViewModel";
-
-      static String com_nonsense_chat_ui_chat_ChatViewModel = "com.nonsense.chat.ui.chat.ChatViewModel";
-
-      static String com_nonsense_chat_ui_navigation_RootViewModel = "com.nonsense.chat.ui.navigation.RootViewModel";
-
-      static String com_nonsense_chat_ui_chatlist_ChatListViewModel = "com.nonsense.chat.ui.chatlist.ChatListViewModel";
-
-      static String com_nonsense_chat_ui_friends_FriendsViewModel = "com.nonsense.chat.ui.friends.FriendsViewModel";
-
-      static String com_nonsense_chat_call_CallViewModel = "com.nonsense.chat.call.CallViewModel";
-
-      static String com_nonsense_chat_ui_vpn_VpnViewModel = "com.nonsense.chat.ui.vpn.VpnViewModel";
-
-      static String com_nonsense_chat_ui_group_GroupInfoViewModel = "com.nonsense.chat.ui.group.GroupInfoViewModel";
 
       static String com_nonsense_chat_ui_auth_AuthViewModel = "com.nonsense.chat.ui.auth.AuthViewModel";
 
-      static String com_nonsense_chat_ui_profile_ProfileViewModel = "com.nonsense.chat.ui.profile.ProfileViewModel";
+      static String com_nonsense_chat_call_CallViewModel = "com.nonsense.chat.call.CallViewModel";
+
+      static String com_nonsense_chat_ui_chatlist_ChatListViewModel = "com.nonsense.chat.ui.chatlist.ChatListViewModel";
+
+      static String com_nonsense_chat_ui_chat_ChatViewModel = "com.nonsense.chat.ui.chat.ChatViewModel";
 
       static String com_nonsense_chat_ui_chat_StickerPickerViewModel = "com.nonsense.chat.ui.chat.StickerPickerViewModel";
 
-      @KeepFieldType
-      NewGroupViewModel com_nonsense_chat_ui_group_NewGroupViewModel2;
+      static String com_nonsense_chat_ui_chat_StickerPackViewModel = "com.nonsense.chat.ui.chat.StickerPackViewModel";
+
+      static String com_nonsense_chat_ui_group_GroupInfoViewModel = "com.nonsense.chat.ui.group.GroupInfoViewModel";
+
+      static String com_nonsense_chat_ui_friends_FriendsViewModel = "com.nonsense.chat.ui.friends.FriendsViewModel";
+
+      static String com_nonsense_chat_ui_group_NewGroupViewModel = "com.nonsense.chat.ui.group.NewGroupViewModel";
+
+      static String com_nonsense_chat_ui_vpn_VpnViewModel = "com.nonsense.chat.ui.vpn.VpnViewModel";
+
+      static String com_nonsense_chat_ui_navigation_RootViewModel = "com.nonsense.chat.ui.navigation.RootViewModel";
+
+      static String com_nonsense_chat_ui_settings_SettingsViewModel = "com.nonsense.chat.ui.settings.SettingsViewModel";
+
+      static String com_nonsense_chat_ui_profile_ProfileViewModel = "com.nonsense.chat.ui.profile.ProfileViewModel";
 
       @KeepFieldType
       EditProfileViewModel com_nonsense_chat_ui_profile_EditProfileViewModel2;
 
       @KeepFieldType
-      StickerPackViewModel com_nonsense_chat_ui_chat_StickerPackViewModel2;
-
-      @KeepFieldType
-      SettingsViewModel com_nonsense_chat_ui_settings_SettingsViewModel2;
-
-      @KeepFieldType
-      ChatViewModel com_nonsense_chat_ui_chat_ChatViewModel2;
-
-      @KeepFieldType
-      RootViewModel com_nonsense_chat_ui_navigation_RootViewModel2;
-
-      @KeepFieldType
-      ChatListViewModel com_nonsense_chat_ui_chatlist_ChatListViewModel2;
-
-      @KeepFieldType
-      FriendsViewModel com_nonsense_chat_ui_friends_FriendsViewModel2;
+      AuthViewModel com_nonsense_chat_ui_auth_AuthViewModel2;
 
       @KeepFieldType
       CallViewModel com_nonsense_chat_call_CallViewModel2;
 
       @KeepFieldType
-      VpnViewModel com_nonsense_chat_ui_vpn_VpnViewModel2;
+      ChatListViewModel com_nonsense_chat_ui_chatlist_ChatListViewModel2;
+
+      @KeepFieldType
+      ChatViewModel com_nonsense_chat_ui_chat_ChatViewModel2;
+
+      @KeepFieldType
+      StickerPickerViewModel com_nonsense_chat_ui_chat_StickerPickerViewModel2;
+
+      @KeepFieldType
+      StickerPackViewModel com_nonsense_chat_ui_chat_StickerPackViewModel2;
 
       @KeepFieldType
       GroupInfoViewModel com_nonsense_chat_ui_group_GroupInfoViewModel2;
 
       @KeepFieldType
-      AuthViewModel com_nonsense_chat_ui_auth_AuthViewModel2;
+      FriendsViewModel com_nonsense_chat_ui_friends_FriendsViewModel2;
+
+      @KeepFieldType
+      NewGroupViewModel com_nonsense_chat_ui_group_NewGroupViewModel2;
+
+      @KeepFieldType
+      VpnViewModel com_nonsense_chat_ui_vpn_VpnViewModel2;
+
+      @KeepFieldType
+      RootViewModel com_nonsense_chat_ui_navigation_RootViewModel2;
+
+      @KeepFieldType
+      SettingsViewModel com_nonsense_chat_ui_settings_SettingsViewModel2;
 
       @KeepFieldType
       ProfileViewModel com_nonsense_chat_ui_profile_ProfileViewModel2;
-
-      @KeepFieldType
-      StickerPickerViewModel com_nonsense_chat_ui_chat_StickerPickerViewModel2;
     }
   }
 
@@ -612,39 +612,51 @@ public final class DaggerNonsenseApp_HiltComponents_SingletonC {
 
     @IdentifierNameString
     private static final class LazyClassKeyProvider {
-      static String com_nonsense_chat_ui_auth_AuthViewModel = "com.nonsense.chat.ui.auth.AuthViewModel";
+      static String com_nonsense_chat_call_CallViewModel = "com.nonsense.chat.call.CallViewModel";
 
-      static String com_nonsense_chat_ui_chat_StickerPackViewModel = "com.nonsense.chat.ui.chat.StickerPackViewModel";
+      static String com_nonsense_chat_ui_settings_SettingsViewModel = "com.nonsense.chat.ui.settings.SettingsViewModel";
+
+      static String com_nonsense_chat_ui_friends_FriendsViewModel = "com.nonsense.chat.ui.friends.FriendsViewModel";
+
+      static String com_nonsense_chat_ui_group_GroupInfoViewModel = "com.nonsense.chat.ui.group.GroupInfoViewModel";
+
+      static String com_nonsense_chat_ui_chatlist_ChatListViewModel = "com.nonsense.chat.ui.chatlist.ChatListViewModel";
+
+      static String com_nonsense_chat_ui_navigation_RootViewModel = "com.nonsense.chat.ui.navigation.RootViewModel";
 
       static String com_nonsense_chat_ui_chat_StickerPickerViewModel = "com.nonsense.chat.ui.chat.StickerPickerViewModel";
 
       static String com_nonsense_chat_ui_profile_EditProfileViewModel = "com.nonsense.chat.ui.profile.EditProfileViewModel";
 
-      static String com_nonsense_chat_ui_chatlist_ChatListViewModel = "com.nonsense.chat.ui.chatlist.ChatListViewModel";
+      static String com_nonsense_chat_ui_profile_ProfileViewModel = "com.nonsense.chat.ui.profile.ProfileViewModel";
 
       static String com_nonsense_chat_ui_chat_ChatViewModel = "com.nonsense.chat.ui.chat.ChatViewModel";
 
-      static String com_nonsense_chat_call_CallViewModel = "com.nonsense.chat.call.CallViewModel";
-
       static String com_nonsense_chat_ui_vpn_VpnViewModel = "com.nonsense.chat.ui.vpn.VpnViewModel";
 
-      static String com_nonsense_chat_ui_group_GroupInfoViewModel = "com.nonsense.chat.ui.group.GroupInfoViewModel";
+      static String com_nonsense_chat_ui_chat_StickerPackViewModel = "com.nonsense.chat.ui.chat.StickerPackViewModel";
+
+      static String com_nonsense_chat_ui_auth_AuthViewModel = "com.nonsense.chat.ui.auth.AuthViewModel";
 
       static String com_nonsense_chat_ui_group_NewGroupViewModel = "com.nonsense.chat.ui.group.NewGroupViewModel";
 
-      static String com_nonsense_chat_ui_profile_ProfileViewModel = "com.nonsense.chat.ui.profile.ProfileViewModel";
-
-      static String com_nonsense_chat_ui_navigation_RootViewModel = "com.nonsense.chat.ui.navigation.RootViewModel";
-
-      static String com_nonsense_chat_ui_friends_FriendsViewModel = "com.nonsense.chat.ui.friends.FriendsViewModel";
-
-      static String com_nonsense_chat_ui_settings_SettingsViewModel = "com.nonsense.chat.ui.settings.SettingsViewModel";
+      @KeepFieldType
+      CallViewModel com_nonsense_chat_call_CallViewModel2;
 
       @KeepFieldType
-      AuthViewModel com_nonsense_chat_ui_auth_AuthViewModel2;
+      SettingsViewModel com_nonsense_chat_ui_settings_SettingsViewModel2;
 
       @KeepFieldType
-      StickerPackViewModel com_nonsense_chat_ui_chat_StickerPackViewModel2;
+      FriendsViewModel com_nonsense_chat_ui_friends_FriendsViewModel2;
+
+      @KeepFieldType
+      GroupInfoViewModel com_nonsense_chat_ui_group_GroupInfoViewModel2;
+
+      @KeepFieldType
+      ChatListViewModel com_nonsense_chat_ui_chatlist_ChatListViewModel2;
+
+      @KeepFieldType
+      RootViewModel com_nonsense_chat_ui_navigation_RootViewModel2;
 
       @KeepFieldType
       StickerPickerViewModel com_nonsense_chat_ui_chat_StickerPickerViewModel2;
@@ -653,34 +665,22 @@ public final class DaggerNonsenseApp_HiltComponents_SingletonC {
       EditProfileViewModel com_nonsense_chat_ui_profile_EditProfileViewModel2;
 
       @KeepFieldType
-      ChatListViewModel com_nonsense_chat_ui_chatlist_ChatListViewModel2;
+      ProfileViewModel com_nonsense_chat_ui_profile_ProfileViewModel2;
 
       @KeepFieldType
       ChatViewModel com_nonsense_chat_ui_chat_ChatViewModel2;
 
       @KeepFieldType
-      CallViewModel com_nonsense_chat_call_CallViewModel2;
-
-      @KeepFieldType
       VpnViewModel com_nonsense_chat_ui_vpn_VpnViewModel2;
 
       @KeepFieldType
-      GroupInfoViewModel com_nonsense_chat_ui_group_GroupInfoViewModel2;
+      StickerPackViewModel com_nonsense_chat_ui_chat_StickerPackViewModel2;
+
+      @KeepFieldType
+      AuthViewModel com_nonsense_chat_ui_auth_AuthViewModel2;
 
       @KeepFieldType
       NewGroupViewModel com_nonsense_chat_ui_group_NewGroupViewModel2;
-
-      @KeepFieldType
-      ProfileViewModel com_nonsense_chat_ui_profile_ProfileViewModel2;
-
-      @KeepFieldType
-      RootViewModel com_nonsense_chat_ui_navigation_RootViewModel2;
-
-      @KeepFieldType
-      FriendsViewModel com_nonsense_chat_ui_friends_FriendsViewModel2;
-
-      @KeepFieldType
-      SettingsViewModel com_nonsense_chat_ui_settings_SettingsViewModel2;
     }
 
     private static final class SwitchingProvider<T> implements Provider<T> {

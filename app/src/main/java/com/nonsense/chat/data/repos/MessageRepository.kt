@@ -159,12 +159,37 @@ class MessageRepository @Inject constructor(
 
     suspend fun sendFile(
         chatId: String, uid: String, nick: String,
-        fileUrl: String, fileName: String, fileSize: Long,
+        fileUrl: String, fileName: String, fileSize: Long, mimeType: String? = null,
     ) = post(chatId, uid, nick, "📎 $fileName") {
         put("type", MsgType.FILE)
         put("fileUrl", fileUrl)
         put("fileName", fileName)
         put("fileSize", fileSize)
+        mimeType?.let { put("mimeType", it) }
+        put("uploadedVia", "supabase")
+    }
+
+    suspend fun sendAudio(
+        chatId: String, uid: String, nick: String,
+        audioUrl: String, fileName: String, fileSize: Long, mimeType: String? = null,
+    ) = post(chatId, uid, nick, "Audio") {
+        put("type", MsgType.AUDIO)
+        put("fileUrl", audioUrl)
+        put("fileName", fileName)
+        put("fileSize", fileSize)
+        mimeType?.let { put("mimeType", it) }
+        put("uploadedVia", "supabase")
+    }
+
+    suspend fun sendVideo(
+        chatId: String, uid: String, nick: String,
+        videoUrl: String, fileName: String, fileSize: Long, mimeType: String? = null,
+    ) = post(chatId, uid, nick, "Video") {
+        put("type", MsgType.VIDEO)
+        put("fileUrl", videoUrl)
+        put("fileName", fileName)
+        put("fileSize", fileSize)
+        mimeType?.let { put("mimeType", it) }
         put("uploadedVia", "supabase")
     }
 
@@ -203,6 +228,25 @@ class MessageRepository @Inject constructor(
                 original.fileUrl?.let { put("fileUrl", it) }
                 original.fileName?.let { put("fileName", it) }
                 original.fileSize?.let { put("fileSize", it) }
+                original.mimeType?.let { put("mimeType", it) }
+                put("uploadedVia", original.uploadedVia ?: "supabase")
+                put("forwardFrom", from)
+            }
+            MsgType.AUDIO -> post(targetChatId, uid, nick, "Audio") {
+                put("type", MsgType.AUDIO)
+                original.fileUrl?.let { put("fileUrl", it) }
+                original.fileName?.let { put("fileName", it) }
+                original.fileSize?.let { put("fileSize", it) }
+                original.mimeType?.let { put("mimeType", it) }
+                put("uploadedVia", original.uploadedVia ?: "supabase")
+                put("forwardFrom", from)
+            }
+            MsgType.VIDEO -> post(targetChatId, uid, nick, "Video") {
+                put("type", MsgType.VIDEO)
+                original.fileUrl?.let { put("fileUrl", it) }
+                original.fileName?.let { put("fileName", it) }
+                original.fileSize?.let { put("fileSize", it) }
+                original.mimeType?.let { put("mimeType", it) }
                 put("uploadedVia", original.uploadedVia ?: "supabase")
                 put("forwardFrom", from)
             }

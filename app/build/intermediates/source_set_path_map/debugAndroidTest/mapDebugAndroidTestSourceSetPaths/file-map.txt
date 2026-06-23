@@ -1,0 +1,4 @@
+com.nonsense.chat.test.app-androidTest-0 F:\Загрузки\messenger\android\app\build\generated\res\resValues\androidTest\debug
+com.nonsense.chat.test.app-mergeDebugAndroidTestResources-1 F:\Загрузки\messenger\android\app\build\intermediates\incremental\debugAndroidTest\mergeDebugAndroidTestResources\merged.dir
+com.nonsense.chat.test.app-mergeDebugAndroidTestResources-2 F:\Загрузки\messenger\android\app\build\intermediates\incremental\debugAndroidTest\mergeDebugAndroidTestResources\stripped.dir
+com.nonsense.chat.test.app-debugAndroidTest-3 F:\Загрузки\messenger\android\app\build\intermediates\merged_res\debugAndroidTest\mergeDebugAndroidTestResources

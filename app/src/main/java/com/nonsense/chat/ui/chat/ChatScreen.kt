@@ -269,7 +269,9 @@ fun ChatScreen(
         AttachSheet(
             onDismiss = { showAttach = false },
             onSendPhoto = { f -> viewModel.sendPhoto(f.bytes, f.name, null, false) },
-            onSendFile = { f -> viewModel.sendFile(f.bytes, f.name, f.mime) },
+            onSendVideo = { f -> viewModel.sendVideo(f.bytes, f.name, f.mime) },
+            onSendAudio = { f -> viewModel.sendAudio(f.bytes, f.name, f.mime) },
+            onSendFile = { f -> viewModel.sendAttachment(f.bytes, f.name, f.mime) },
             onCreatePoll = { showPoll = true },
         )
     }

@@ -39,6 +39,10 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import kotlinx.datetime.Clock
+import java.util.UUID
 import javax.inject.Inject
 
 data class MessageUi(
@@ -100,6 +104,7 @@ class ChatViewModel @Inject constructor(
     private val members = MutableStateFlow<Map<String, User>>(emptyMap())
     private val replyingTo = MutableStateFlow<Message?>(null)
     private val editing = MutableStateFlow<Message?>(null)
+    private val pendingUploads = MutableStateFlow<List<Message>>(emptyList())
     // Newest-N message window; grown by [loadOlder] as the user scrolls up.
     private val messageLimit = MutableStateFlow(PAGE_SIZE)
     private var typingJob: Job? = null
@@ -115,9 +120,16 @@ class ChatViewModel @Inject constructor(
         }
     }
 
+    private val visibleMessages = combine(
+        messages.observeMessages(chatId, messageLimit),
+        pendingUploads,
+    ) { msgs, pending ->
+        (msgs + pending).sortedBy { it.at_?.toEpochMilliseconds() ?: Long.MAX_VALUE }
+    }
+
     val uiState: StateFlow<ChatUiState> = combine(
         chats.observe(chatId),
-        messages.observeMessages(chatId, messageLimit),
+        visibleMessages,
         members,
         replyingTo,
         editing,
@@ -216,6 +228,55 @@ class ChatViewModel @Inject constructor(
 
     // ── Actions ───────────────────────────────────────────────────────────────
 
+    private fun pendingAttachment(
+        type: String,
+        bytes: ByteArray,
+        fileName: String,
+        contentType: String?,
+        caption: String? = null,
+        spoiler: Boolean = false,
+    ): Message {
+        val id = "local-${UUID.randomUUID()}"
+        return Message(
+            id = id,
+            uid = myUid,
+            author = myNick,
+            at = JsonPrimitive(Clock.System.now().toEpochMilliseconds()),
+            type = type,
+            photoUrl = if (type == MsgType.PHOTO) "local:$id" else null,
+            caption = caption,
+            isSpoiler = spoiler,
+            fileUrl = if (type != MsgType.PHOTO) "local:$id" else null,
+            fileName = fileName,
+            fileSize = bytes.size.toLong(),
+            mimeType = contentType,
+            chatId = chatId,
+            localUpload = true,
+            localBytes = bytes,
+        )
+    }
+
+    private fun addPending(message: Message) {
+        pendingUploads.update { it + message }
+    }
+
+    private fun removePending(id: String) {
+        pendingUploads.update { list -> list.filterNot { it.id == id } }
+    }
+
+    private fun failPending(id: String) {
+        pendingUploads.update { list -> list.map { if (it.id == id) it.copy(localFailed = true) else it } }
+    }
+
+    private fun looksLikeImage(name: String): Boolean =
+        name.substringAfterLast('.', "").lowercase() in setOf("jpg", "jpeg", "png", "webp", "gif", "bmp")
+
+    private fun looksLikeVideo(name: String): Boolean =
+        name.substringAfterLast('.', "").lowercase() in setOf("mp4", "mov", "m4v", "webm", "mkv", "avi")
+
+    private fun looksLikeAudio(name: String): Boolean =
+        name.substringAfterLast('.', "").lowercase() in setOf("mp3", "m4a", "aac", "wav", "ogg", "opus", "flac")
+
     fun sendText(text: String) {
         val trimmed = text.trim()
         if (trimmed.isEmpty()) return
@@ -236,16 +297,74 @@ class ChatViewModel @Inject constructor(
     }
 
     fun sendPhoto(bytes: ByteArray, fileName: String, caption: String?, spoiler: Boolean) {
+        val pending = pendingAttachment(MsgType.PHOTO, bytes, fileName, null, caption = caption, spoiler = spoiler)
+        addPending(pending)
         viewModelScope.launch(safe) {
-            val up = storage.upload(bytes, fileName, compressIfImage = true, thumbnail = true)
-            messages.sendPhoto(chatId, myUid, myNick, up.url, up.fileName, up.size, caption, spoiler, up.thumbUrl)
+            runCatching {
+                val up = storage.upload(bytes, fileName, compressIfImage = true, thumbnail = true)
+                messages.sendPhoto(chatId, myUid, myNick, up.url, up.fileName, up.size, caption, spoiler, up.thumbUrl)
+            }.onSuccess {
+                removePending(pending.id)
+            }.onFailure {
+                failPending(pending.id)
+            }
         }
     }
 
     fun sendFile(bytes: ByteArray, fileName: String, contentType: String?) {
+        val pending = pendingAttachment(MsgType.FILE, bytes, fileName, contentType)
+        addPending(pending)
         viewModelScope.launch(safe) {
-            val up = storage.upload(bytes, fileName, contentType, compressIfImage = false)
-            messages.sendFile(chatId, myUid, myNick, up.url, up.fileName, up.size)
+            runCatching {
+                val up = storage.upload(bytes, fileName, contentType, compressIfImage = false)
+                messages.sendFile(chatId, myUid, myNick, up.url, up.fileName, up.size, contentType)
+            }.onSuccess {
+                removePending(pending.id)
+            }.onFailure {
+                failPending(pending.id)
+            }
+        }
+    }
+
+    fun sendAudio(bytes: ByteArray, fileName: String, contentType: String?) {
+        val pending = pendingAttachment(MsgType.AUDIO, bytes, fileName, contentType)
+        addPending(pending)
+        viewModelScope.launch(safe) {
+            runCatching {
+                val up = storage.upload(bytes, fileName, contentType, compressIfImage = false)
+                messages.sendAudio(chatId, myUid, myNick, up.url, up.fileName, up.size, contentType)
+            }.onSuccess {
+                removePending(pending.id)
+            }.onFailure {
+                failPending(pending.id)
+            }
+        }
+    }
+
+    fun sendVideo(bytes: ByteArray, fileName: String, contentType: String?) {
+        val pending = pendingAttachment(MsgType.VIDEO, bytes, fileName, contentType)
+        addPending(pending)
+        viewModelScope.launch(safe) {
+            runCatching {
+                val up = storage.upload(bytes, fileName, contentType, compressIfImage = false)
+                messages.sendVideo(chatId, myUid, myNick, up.url, up.fileName, up.size, contentType)
+            }.onSuccess {
+                removePending(pending.id)
+            }.onFailure {
+                failPending(pending.id)
+            }
+        }
+    }
+
+    fun sendAttachment(bytes: ByteArray, fileName: String, contentType: String?) {
+        when {
+            contentType?.startsWith("image/") == true || looksLikeImage(fileName) ->
+                sendPhoto(bytes, fileName, caption = null, spoiler = false)
+            contentType?.startsWith("video/") == true || looksLikeVideo(fileName) ->
+                sendVideo(bytes, fileName, contentType)
+            contentType?.startsWith("audio/") == true || looksLikeAudio(fileName) ->
+                sendAudio(bytes, fileName, contentType)
+            else -> sendFile(bytes, fileName, contentType)
         }
     }
 

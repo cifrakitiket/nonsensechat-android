@@ -13,6 +13,8 @@ import kotlinx.serialization.json.intOrNull
 object MsgType {
     const val TEXT = "text"
     const val PHOTO = "photo"
+    const val VIDEO = "video"
+    const val AUDIO = "audio"
     const val FILE = "file"
     const val STICKER = "sticker"
     const val POLL = "poll"
@@ -73,6 +75,7 @@ data class Message(
     val fileUrl: String? = null,
     val fileName: String? = null,
     val fileSize: Long? = null,
+    val mimeType: String? = null,
     val uploadedVia: String? = null,
     // Sticker:
     val stickerUrl: String? = null,
@@ -82,6 +85,10 @@ data class Message(
     val poll: Poll? = null,
     // Parent (stored in doc by the shim so trg_messages can derive chat_id):
     @SerialName("chat_id") val chatId: String = "",
+    // Local-only optimistic upload state. These fields are never written to Supabase.
+    @Transient val localUpload: Boolean = false,
+    @Transient val localFailed: Boolean = false,
+    @Transient val localBytes: ByteArray? = null,
 ) {
     val at_: Instant? get() = Timestamps.parse(at)
     val isSystem get() = type == MsgType.SYSTEM
